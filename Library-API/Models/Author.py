@@ -10,7 +10,7 @@ class AuthorList(Resource):
         parser.add_argument('name', required=True, help="Name is required")
         data = parser.parse_args()
 
-        author = AuthorModel(**data)
+        author = AuthorModel(name=data['name'])
         author.save_to_db()
 
         return author.json(), 201
