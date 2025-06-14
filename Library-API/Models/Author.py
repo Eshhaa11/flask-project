@@ -1,45 +1,25 @@
-from flask_restful import Resource, reqparse
-from models.author import AuthorModel
+from db import db
 
-class AuthorList(Resource):
-    def get(self):
-        return {'authors': [author.json() for author in AuthorModel.query.all()]}
+class AuthorModel(db.Model):
+    __tablename__ = 'authors'
 
-    def post(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', required=True, help="Name is required")
-        data = parser.parse_args()
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80))
 
-        author = AuthorModel(name=data['name'])
-        author.save_to_db()
+    def __init__(self, name):
+        self.name = name
 
-        return author.json(), 201
+    def json(self):
+        return {'id': self.id, 'name': self.name}
 
-class AuthorResource(Resource):
-    def get(self, author_id):
-        author = AuthorModel.find_by_id(author_id)
-        if not author:
-            return {'message': 'Author not found'}, 404
-        return author.json()
+    @classmethod
+    def find_by_id(cls, author_id):
+        return cls.query.filter_by(id=author_id).first()
 
-    def put(self, author_id):
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', required=True)
-        data = parser.parse_args()
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
 
-        author = AuthorModel.find_by_id(author_id)
-
-        if author:
-            author.name = data['name']
-        else:
-            author = AuthorModel(name=data['name'])
-
-        author.save_to_db()
-        return author.json()
-
-    def delete(self, author_id):
-        author = AuthorModel.find_by_id(author_id)
-        if author:
-            author.delete_from_db()
-            return {'message': 'Author deleted'}
-        return {'message': 'Author not found'}, 404
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
