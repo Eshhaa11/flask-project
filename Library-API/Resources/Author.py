@@ -1,27 +1,43 @@
-from db import db
+from flask_restful import Resource, reqparse
+from models.author import AuthorModel
 
-class AuthorModel(db.Model):
-    __tablename__ = 'authors'
+class AuthorList(Resource):
+    def get(self):
+        return {'authors': [author.json() for author in AuthorModel.query.all()]}
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80))
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', required=True, help="Name cannot be blank.")
+        data = parser.parse_args()
 
-    books = db.relationship('BookModel', backref='author', lazy=True)
+        author = AuthorModel(name=data['name'])
+        author.save_to_db()
+        return author.json(), 201
 
-    def __init__(self, name):
-        self.name = name
+class AuthorResource(Resource):
+    def get(self, author_id):
+        author = AuthorModel.find_by_id(author_id)
+        if not author:
+            return {'message': 'Author not found'}, 404
+        return author.json()
 
-    def json(self):
-        return {'id': self.id, 'name': self.name}
+    def put(self, author_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', required=True)
+        data = parser.parse_args()
 
-    @classmethod
-    def find_by_id(cls, author_id):
-        return cls.query.filter_by(id=author_id).first()
+        author = AuthorModel.find_by_id(author_id)
+        if author:
+            author.name = data['name']
+        else:
+            author = AuthorModel(name=data['name'])
 
-    def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
+        author.save_to_db()
+        return author.json()
 
-    def delete_from_db(self):
-        db.session.delete(self)
-        db.session.commit()
+    def delete(self, author_id):
+        author = AuthorModel.find_by_id(author_id)
+        if author:
+            author.delete_from_db()
+            return {'message': 'Author deleted'}
+        return {'message': 'Author not found'}, 404
