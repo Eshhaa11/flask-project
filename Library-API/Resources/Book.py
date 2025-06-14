@@ -7,13 +7,12 @@ class BookList(Resource):
 
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument('title', required=True, help="Title cannot be blank")
-        parser.add_argument('author_id', type=int, required=True, help="Author ID is required")
+        parser.add_argument('title', required=True, help="Title cannot be blank.")
+        parser.add_argument('author_id', type=int, required=True, help="Author ID is required.")
         data = parser.parse_args()
 
         book = BookModel(**data)
         book.save_to_db()
-
         return book.json(), 201
 
 class BookResource(Resource):
@@ -30,12 +29,11 @@ class BookResource(Resource):
         data = parser.parse_args()
 
         book = BookModel.find_by_id(book_id)
-
         if book:
             book.title = data['title']
             book.author_id = data['author_id']
         else:
-            book = BookModel(**data)
+            book = BookModel(book_id, **data)
 
         book.save_to_db()
         return book.json()
